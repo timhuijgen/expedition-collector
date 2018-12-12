@@ -9,6 +9,7 @@
 // @match        https://s131-nl.ogame.gameforge.com/game/index.php?page=messages*
 // ==/UserScript==
 
+
 var inline_src = (<><![CDATA[
 
 const config = {
@@ -21,7 +22,7 @@ const config = {
         add: '/add'
     },
     queryInterval: 5000,
-    syncInterval: 500
+    syncInterval: 250
 };
 
 class CollectExpoResults {
@@ -35,26 +36,38 @@ class CollectExpoResults {
     initialize() {
         this.httpClient.fetchSavedReports((saved) => {
             this.savedReports = saved;
-            this.start();
-            setTimeout(() => {
-                this.stop();
-            }, 20000);
+            this.startQueryMessages();
         });
     }
 
-    start() {
+    startQueryMessages() {
+        console.log('Starting querying DOM for expedition reports');
         this.queryInterval = setInterval(this.readResults.bind(this), config.queryInterval);
+    }
+
+    startSync() {
+        console.log('Starting sync expedition reports with server');
         this.syncInterval = setInterval(this.sync.bind(this), config.syncInterval);
     }
 
-    stop() {
-        clearInterval(this.queryInterval);
-        clearInterval(this.syncInterval);
+    stopSync() {
+        console.log('Stopped sync expedition reports with server');
+        if(this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+    }
+
+    stopQueryMessages() {
+        console.log('Stopping querying DOM for expedition reports');
+        if(this.queryInterval) {
+            clearInterval(this.queryInterval);
+        }
     }
 
     sync() {
         const report = this.expoReports.shift();
         if(!report) {
+            this.stopSync();
             return false;
         }
         if(this.savedReports.indexOf(report.id) !== -1) {
@@ -84,10 +97,13 @@ class CollectExpoResults {
         };
     }
 
+
     readResults() {
         const messages = document.querySelectorAll('.msg');
+        let messagesFound = false;
         messages.forEach((message) => {
             if (message.querySelector('.msg_title').innerHTML.indexOf('Expeditieresultaat') > -1) {
+                messagesFound = true;
                 const id = +message.dataset.msgId;
                 if(this.savedReports.indexOf(id) === -1) {
                     this.expoReports.push(this.parseMessage(message));
@@ -95,9 +111,13 @@ class CollectExpoResults {
             }
         });
 
-        this.savedReports.forEach(reportId => {
-            this.setReportAsSaved({id: reportId});
-        });
+        if(messagesFound) {
+            this.stopQueryMessages();
+            this.startSync();
+            this.savedReports.forEach(reportId => {
+                this.setReportAsSaved({id: reportId});
+            });
+        }
     }
 
     setReportAsSaved(report) {

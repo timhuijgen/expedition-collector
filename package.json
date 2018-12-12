@@ -4,7 +4,8 @@
   "description": "",
   "main": "server/src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "server": "node server/dist/index.js",
+    "compile": "tsc"
   },
   "author": "Tim Huijgen",
   "license": "MIT",

@@ -1,5 +1,7 @@
 import Express from 'express';
 import ContentParser from "./ContentParser";
+import {ResourceType} from "./matchers/ResourceTypeMatcher";
+import FleetMatcher from "./matchers/FleetMatcher";
 
 const BodyParser = require('body-parser');
 const Database = require('nedb');
@@ -28,7 +30,7 @@ express.get('/saved', (req, res) => {
     DB.find({}, {
         messageId: 1,
         _id: 0
-    }).sort({date: 1}).limit(200).exec((err: any, messages: { [key: string]: any }[]) => {
+    }).sort({date: 1}).limit(200).exec((err: any, messages: { [key: string]: {messageId: number}}[]) => {
         res.json(messages.map(message => message.messageId));
     });
 });
@@ -45,8 +47,7 @@ express.post('/add', (req, res) => {
 express.post('/test', (req, res) => {
     const parser = new ContentParser(req.body.teststring).parse();
     console.log(parser.getValue());
-    console.log(parser.getProperty('resources'));
-    console.log(parser.getProperty('resourceType'));
+    console.log(parser.getProperty('fleet'));
     res.send({});
 });
 
@@ -109,6 +110,45 @@ function insertResult(data: ExpoResult, cb: Function) {
     });
 }
 
+function stats() {
+    DB.find({}, (err: any, docs: ExpoModel[]) => {
+        docs.sort((a: ExpoModel, b: ExpoModel) => a.date - b.date);
+        const totalValueGenerated = docs.reduce((value, doc) => {
+            return value + doc.value;
+        }, 0);
+        const totalValueMSE = docs.reduce((value, doc: ExpoModel) => {
+            if(doc.resources) {
+                switch(doc.resourceType) {
+                    case ResourceType.Kristal:
+                        return value + (doc.value * 1.9);
+                    case ResourceType.Deuterium:
+                        return value + (doc.value * 2.8);
+                    case ResourceType.DarkMatter:
+                        return value; // + (doc.value * 100);
+                }
+            }
+            if(doc.fleet) {
+                return value + (new FleetMatcher().getValue(doc.content, true));
+            }
+            return value + doc.value;
+        }, 0);
+        const firstDate = Moment(docs[0].date);
+        const lastDate = Moment(docs[docs.length - 1].date);
+        const hours = lastDate.diff(firstDate, 'hours');
+
+        console.log('Total reports: ' + docs.length);
+        console.log('Reports span a range of: %s hours', hours);
+        console.log('Average Expeditions per day: ', docs.length / (hours/24));
+        console.log('Average Value per day: ', totalValueGenerated / (hours/24));
+        console.log('Average Value MSE per day: ', totalValueMSE / (hours/24));
+        console.log('Total Value: ' + totalValueGenerated);
+        console.log('Total Value MSE: ' + totalValueMSE);
+        console.log('Average Value per expedition: ' + Math.floor(totalValueGenerated / docs.length));
+        console.log('Average Value MSE per expedition: ' + Math.floor(totalValueMSE / docs.length));
+
+    });
+}
+
 function getInputFromArgv(arg: string) {
     let match = process.argv.find(argument => {
         return argument.substr(0, arg.length + 3) === `--${arg}=`;
@@ -124,6 +164,9 @@ if (getInputFromArgv('update')) {
     DB.find({}, (err: any, results: ExpoModel[]) => {
         if (err) return console.error(err.message);
 
+        console.log(`Updating ${results.length} Records ..`);
+
+        let counter = 0;
         results.forEach((report: ExpoModel) => {
             const parser = new ContentParser(report.content).parse();
             const newReport = {
@@ -142,13 +185,22 @@ if (getInputFromArgv('update')) {
             };
             DB.update({messageId: report.messageId}, {$set: newReport}, {}, (err: any, result: any) => {
                 if(err) return console.error(err.message);
-
-                DB.persistence.compactDatafile();
+                counter += 1;
+                done(counter);
             });
+            const done = (c: number) => {
+                if(c === results.length) {
+                    console.log('Updates done .. Compressing Datafile ..');
+                    DB.persistence.compactDatafile();
+                    console.log('Done');
+                }
+            };
         });
     });
 
 }
+
+stats();
 
 process.once('uncaughtException', function (err) {
     console.error('FATAL: Uncaught exception.');

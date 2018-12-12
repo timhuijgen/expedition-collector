@@ -9,9 +9,9 @@ export enum ResourceType {
 }
 
 export default class ResourceTypeMatcher extends Matcher {
-    public matcher = /Er is (\w*)\s? ([0-9]+\.?[0-9]+\.?[0-9]+\.?[0-9]+) buitgemaakt/;
+    public matcher = /Er is (\w*\s?\w*?)\s? ([0-9]+\.?[0-9]+\.?[0-9]+\.?[0-9]+) buitgemaakt/;
 
-    public match(content: string): number | false {
+    public match(content: string): number | boolean {
         const isResource = this.matcher.test(content);
         if(!isResource) {
             return false;
