@@ -54,7 +54,7 @@ export default class ContentParser {
         return this.value;
     }
 
-    public getProperty(property: string): boolean | number {
+    public getProperty(property: string): any {
         const prop = this.expoResults.find(result => result.property === property);
         if(!prop) {
             console.error(`Property ${property} not found.`);

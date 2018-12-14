@@ -4,8 +4,10 @@
   "description": "",
   "main": "server/src/index.js",
   "scripts": {
-    "server": "node server/dist/index.js",
-    "compile": "tsc"
+    "server": "node server/dist/index.js --",
+    "server:update": "node server/dist/index.js --update=true",
+    "compile": "tsc",
+    "tsc:watch": "tsc --watch"
   },
   "author": "Tim Huijgen",
   "license": "MIT",

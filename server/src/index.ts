@@ -16,18 +16,31 @@ express.use(function (req, res, next) {
     next();
 });
 
-const DB = new Database({filename: 'server/data/datastore'});
-DB.ensureIndex({fieldName: 'messageId', unique: true}, (err: any) => {
+const defaultTradeRatio = '2.5-1.5-1';
+
+const ExpoStore = new Database({filename: 'server/data/expostore'});
+ExpoStore.ensureIndex({fieldName: 'messageId', unique: true}, (err: any) => {
     if (err) console.error('Error while trying to make messageId unique', err);
 });
-DB.loadDatabase((err: any) => {
-    if (err) return console.error('Error while loading datastore', err);
+ExpoStore.loadDatabase((err: any) => {
+    if (err) return console.error('Error while loading expostore', err);
 
-    console.log('Datastore loaded');
+    console.log('Expostore loaded');
+});
+
+const UserStore = new Database({filename: 'server/data/userstore'});
+UserStore.ensureIndex({fieldName: 'userId', unique: true}, (err: any) => {
+    if (err) console.error('Error while trying to make userId unique', err);
+});
+UserStore.loadDatabase((err: any) => {
+    if (err) return console.error('Error while loading user store', err);
+
+    console.log('UserStore loaded');
 });
 
 express.get('/saved', (req, res) => {
-    DB.find({}, {
+    const userId = req.query.userId;
+    ExpoStore.find({userId: userId}, {
         messageId: 1,
         _id: 0
     }).sort({date: 1}).limit(200).exec((err: any, messages: { [key: string]: {messageId: number}}[]) => {
@@ -36,12 +49,44 @@ express.get('/saved', (req, res) => {
 });
 
 express.post('/add', (req, res) => {
-    insertResult(req.body, (err: any) => {
+    const userId = req.query.userId;
+    insertResult({userId: userId, ...req.body}, (err: any) => {
         if (err) {
             return res.send({error: 1, message: err.message});
         }
         res.send({error: null, message: 'success'});
     });
+});
+
+interface User {
+    userId: string;
+    trading: string;
+    fleetValue?: {
+        [ResourceType.Metal]?: number;
+        [ResourceType.Kristal]?: number;
+        [ResourceType.Deuterium]?: number;
+    };
+}
+
+express.post('/new-user', (req, res) => {
+    UserStore.insert({
+        userId: req.query.userId,
+        trading: req.body.trading,
+        fleetValue: req.body.fleetValue
+    }, (err: any, user: User) => {
+        if(err) {
+            res.send({error: 1, message: err.message});
+            return console.error('Error creating new user', err);
+        }
+
+        console.log('New user created', user);
+        res.send({});
+    });
+});
+
+express.post('/settings', (req, res) => {
+    UserStore.update({userId: req.query.userId}, {$set: {}})
+    res.send({});
 });
 
 express.post('/test', (req, res) => {
@@ -53,6 +98,7 @@ express.post('/test', (req, res) => {
 
 interface ExpoResult {
     id: number
+    userId: string;
     date: string
     location: string
     content: string
@@ -60,29 +106,31 @@ interface ExpoResult {
 
 interface ExpoModel {
     _id?: string;
+    userId: string;
     messageId: number;
     date: number;
     location: string;
     content: string;
     nothing: boolean;
     value: number;
-    delay: boolean | number;
-    speed: boolean | number
-    pirates: boolean | number;
-    aliens: boolean | number;
-    destroyed: boolean | number;
-    fleet: boolean | number;
-    resources: boolean | number;
-    resourceType: boolean | number;
-    item: boolean | number;
-    trader: boolean | number;
+    delay: boolean;
+    speed: boolean;
+    pirates: boolean;
+    aliens: boolean;
+    destroyed: boolean;
+    fleet: boolean;
+    resources: boolean;
+    resourceType: number;
+    item: boolean;
+    trader: boolean;
 }
 
 function insertResult(data: ExpoResult, cb: Function) {
     const parser = new ContentParser(data.content).parse();
     const expoResult: ExpoModel = {
+        userId: data.userId,
         messageId: data.id,
-        date: +Moment(data.date, 'DD.MM.YYYY HH:mm:ss').format('x'), //10.12.2018 15:26:44
+        date: +Moment(data.date, 'DD.MM.YYYY HH:mm:ss').format('x'),
         location: data.location,
         content: data.content,
         nothing: parser.isNothing(),
@@ -99,19 +147,19 @@ function insertResult(data: ExpoResult, cb: Function) {
         trader: parser.getProperty('trader')
     };
 
-    DB.insert(expoResult, (err: any, doc: ExpoModel) => {
+    ExpoStore.insert(expoResult, (err: any, doc: ExpoModel) => {
         if (err) {
             console.error('Error inserting expo result', err.message);
             return cb(err);
         }
 
         cb();
-        console.log('Expo result inserted successfully: ', doc.messageId);
+        console.log('Expo result inserted successfully: UserId: %s, MessageId: %s', doc.userId, doc.messageId);
     });
 }
 
 function stats() {
-    DB.find({}, (err: any, docs: ExpoModel[]) => {
+    ExpoStore.find({}, (err: any, docs: ExpoModel[]) => {
         docs.sort((a: ExpoModel, b: ExpoModel) => a.date - b.date);
         const totalValueGenerated = docs.reduce((value, doc) => {
             return value + doc.value;
@@ -145,7 +193,6 @@ function stats() {
         console.log('Total Value MSE: ' + totalValueMSE);
         console.log('Average Value per expedition: ' + Math.floor(totalValueGenerated / docs.length));
         console.log('Average Value MSE per expedition: ' + Math.floor(totalValueMSE / docs.length));
-
     });
 }
 
@@ -161,7 +208,7 @@ function getInputFromArgv(arg: string) {
 }
 
 if (getInputFromArgv('update')) {
-    DB.find({}, (err: any, results: ExpoModel[]) => {
+    ExpoStore.find({}, (err: any, results: ExpoModel[]) => {
         if (err) return console.error(err.message);
 
         console.log(`Updating ${results.length} Records ..`);
@@ -183,7 +230,7 @@ if (getInputFromArgv('update')) {
                 item: parser.getProperty('item'),
                 trader: parser.getProperty('trader')
             };
-            DB.update({messageId: report.messageId}, {$set: newReport}, {}, (err: any, result: any) => {
+            ExpoStore.update({messageId: report.messageId}, {$set: newReport}, {}, (err: any, result: any) => {
                 if(err) return console.error(err.message);
                 counter += 1;
                 done(counter);
@@ -191,7 +238,7 @@ if (getInputFromArgv('update')) {
             const done = (c: number) => {
                 if(c === results.length) {
                     console.log('Updates done .. Compressing Datafile ..');
-                    DB.persistence.compactDatafile();
+                    ExpoStore.persistence.compactDatafile();
                     console.log('Done');
                 }
             };
