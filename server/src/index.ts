@@ -15,8 +15,14 @@ express.use(function (req, res, next) {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+express.use(function(req, res, next) {
+    if(!req.query.userId) {
+        console.log('No user id provided');
+        return res.json({error: 1, message: 'No user id provided'});
+    }
+    next();
+});
 
-const defaultTradeRatio = '2.5-1.5-1';
 
 const ExpoStore = new Database({filename: 'server/data/expostore'});
 ExpoStore.ensureIndex({fieldName: 'messageId', unique: true}, (err: any) => {
@@ -43,7 +49,7 @@ express.get('/saved', (req, res) => {
     ExpoStore.find({userId: userId}, {
         messageId: 1,
         _id: 0
-    }).sort({date: 1}).limit(200).exec((err: any, messages: { [key: string]: {messageId: number}}[]) => {
+    }).sort({date: -1}).limit(300).exec((err: any, messages: { [key: string]: {messageId: number}}[]) => {
         res.json(messages.map(message => message.messageId));
     });
 });
@@ -52,9 +58,9 @@ express.post('/add', (req, res) => {
     const userId = req.query.userId;
     insertResult({userId: userId, ...req.body}, (err: any) => {
         if (err) {
-            return res.send({error: 1, message: err.message});
+            return res.json({error: 1, message: err.message});
         }
-        res.send({error: null, message: 'success'});
+        res.json({error: null, message: 'success'});
     });
 });
 
@@ -68,25 +74,28 @@ interface User {
     };
 }
 
-express.post('/new-user', (req, res) => {
-    UserStore.insert({
-        userId: req.query.userId,
-        trading: req.body.trading,
-        fleetValue: req.body.fleetValue
-    }, (err: any, user: User) => {
-        if(err) {
-            res.send({error: 1, message: err.message});
-            return console.error('Error creating new user', err);
-        }
-
-        console.log('New user created', user);
-        res.send({});
-    });
-});
 
 express.post('/settings', (req, res) => {
-    UserStore.update({userId: req.query.userId}, {$set: {}})
-    res.send({});
+    console.log('/settings', req.body);
+    UserStore.findOne({userId: req.query.userId}, (err: any, user: User) => {
+        if(user) {
+            return UserStore.update({userId: req.query.userId}, {$set: {
+                trading: req.body.trading,
+                fleetValue: req.body.fleetValue
+            }}, {}, (err: any) => {
+                console.log('User %s settings updated', req.query.userId);
+                res.json({error: !!err});
+            });
+        }
+        UserStore.insert({
+            userId: req.query.userId,
+            trading: req.body.trading,
+            fleetValue: req.body.fleetValue
+        }, (err: any, doc: User) => {
+            console.log('User %s added', req.query.userId);
+            res.json({error: !!err});
+        });
+    });
 });
 
 express.post('/test', (req, res) => {

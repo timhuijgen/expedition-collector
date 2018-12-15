@@ -12,6 +12,7 @@
   "author": "Tim Huijgen",
   "license": "MIT",
   "dependencies": {
+    "@types/nedb": "^1.8.6",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
     "moment": "^2.22.2",

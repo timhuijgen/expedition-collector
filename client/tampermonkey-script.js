@@ -22,8 +22,6 @@ class CollectExpoResults {
     initialize() {
         httpClient.fetchSavedReports((saved) => {
             this.savedReports = saved;
-        });
-        document.querySelector('#ui-id-17').addEventListener('click', () => {
             this.startQueryMessages();
         });
     }
@@ -53,6 +51,7 @@ class CollectExpoResults {
     }
 
     sync() {
+        console.log(this.savedReports);
         const report = this.expoReports.shift();
         if(!report) {
             this.stopSync();
@@ -62,7 +61,7 @@ class CollectExpoResults {
             return this.sync();
         }
 
-        this.setReportAsSaved(report, 'orange');
+        this.setReportAsSaved(report);
         httpClient.saveReport(report, (result) => {
             if(result.error) {
                 console.log(result);
@@ -108,7 +107,7 @@ class CollectExpoResults {
         }
     }
 
-    setReportAsSaved(report, color = 'green') {
+    setReportAsSaved(report) {
         this.savedReports.push(report.id);
         const msg = document.querySelector(`[data-msg-id="${report.id}"]`);
         if(!msg) {
@@ -120,26 +119,28 @@ class CollectExpoResults {
             el.classList.add('expo-saved');
             el.style.width = '16px';
             el.style.height = '16px';
-            el.style.backgroundColor = color;
+            el.style.backgroundColor = 'green';
             el.style.borderRadius = '50%';
             el.style.margin = '6px';
             el.style.display = 'inline-block';
 
             msg.querySelector('.msg_actions').insertAdjacentElement('afterbegin', el);
-        } else {
-            el.style.backgroundColor = color;
         }
     }
 }
 
 class HttpClient {
 
+    constructor(config) {
+        this.config = config;
+    }
+
     buildServerUrl(endpoint) {
-        return `${config.server.url}:${config.server.port}${endpoint}?userId=${config.userId}`;
+        return `${this.config.server.url}:${this.config.server.port}${endpoint}?userId=${this.config.userId}`;
     }
 
     fetchSavedReports(cb) {
-        fetch(this.buildServerUrl(config.endpoints.saved))
+        fetch(this.buildServerUrl(this.config.endpoints.saved))
             .then(response => response.json())
             .then((saved) => {
                 cb(saved);
@@ -148,12 +149,13 @@ class HttpClient {
     }
 
     saveReport(report, cb) {
-        fetch(this.buildServerUrl(config.endpoints.add), {
+        console.log(report);
+        fetch(this.buildServerUrl(this.config.endpoints.add), {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(report),
+            body: JSON.stringify(report)
         })
             .then((res) => res.json())
             .then((result) => {
@@ -162,32 +164,24 @@ class HttpClient {
     }
 
     setConfig(settings, cb) {
-        fetch(this.buildServerUrl(config.endpoints.settings), {
+        fetch(this.buildServerUrl(this.config.endpoints.settings), {
             method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
             },
-            body: JSON.stringify(settings),
+            body: JSON.stringify(settings)
         })
             .then((res) => res.json())
             .then((result) => {
                 cb(result);
             });
     }
-
-    getOrCreateUserId() {
-        let userId = storage.getUserId();
-        if(!userId) {
-            userId = uniqueUserId();
-            storage.setUserId(userId);
-        }
-        return userId;
-    }
 }
 
 class Config {
     constructor() {
         this.userId = null;
+        this.newUser = false;
         this.server = {
             url: 'http://localhost',
             port: 8877
@@ -206,73 +200,81 @@ class Config {
         };
     }
 
-    load(cb) {
+    load() {
         this.userId = storage.getUserId();
 
-        if(!userId) {
+        if(!this.userId) {
+            this.newUser = true;
             this.userId = uniqueUserId();
             storage.setUserId(this.userId);
             storage.setTrading(this.trading);
             storage.setFleetValue(this.fleetValue);
-            return new httpClient().setConfig({
-                trading: this.trading,
-                fleetValue: this.fleetValue
-            }, (result) => {
-                console.log('Result of saving settings', result);
-                cb();
-            });
         }
-
         this.fleetValue = storage.getFleetValue();
         this.trading = storage.getTrading();
-        cb();
+
+        return this;
+    }
+
+    update(httpClient, cb) {
+        if(!this.newUser) {
+            return;
+        }
+        return httpClient.setConfig({
+            trading: this.trading,
+            fleetValue: this.fleetValue
+        }, (result) => {
+            console.log('Result of saving settings', result);
+            cb(result);
+        });
     }
 }
 
 class Storage {
-        constructor() {
-            this._storgage = window.localStorage;
-            this._prefix = 'ExpoCollector::';
-        }
-
-        get(prop) {
-            return this._storgage.getItem(this._prefix + prop);
-        }
-
-        set(prop, value) {
-            return this._storgage.setItem(this._prefix + prop, value);
-        }
-
-        getUserId() {
-            return this.get('UserId');
-        }
-
-        setUserId(id) {
-            return this.set('UserId', id);
-        }
-
-        getTrading() {
-            return this.get('Trading');
-        }
-
-        setTrading(value) {
-            return this.set('Trading', value);
-        }
-
-        getFleetValue() {
-            return JSON.parse(this.get('FleetValue'));
-        }
-
-        setFleetValue(value) {
-            return this.set('FleetValue', JSON.stringify(value))
-        }
+    constructor() {
+        this._storgage = window.localStorage;
+        this._prefix = 'ExpoCollector::';
     }
 
+    get(prop) {
+        return this._storgage.getItem(this._prefix + prop);
+    }
+
+    set(prop, value) {
+        return this._storgage.setItem(this._prefix + prop, value);
+    }
+
+    getUserId() {
+        return this.get('UserId');
+    }
+
+    setUserId(id) {
+        return this.set('UserId', id);
+    }
+
+    getTrading() {
+        return this.get('Trading');
+    }
+
+    setTrading(value) {
+        return this.set('Trading', value);
+    }
+
+    getFleetValue() {
+        return JSON.parse(this.get('FleetValue'));
+    }
+
+    setFleetValue(value) {
+        return this.set('FleetValue', JSON.stringify(value))
+    }
+}
+
 const storage = new Storage();
-const httpClient = new HttpClient();
-const config = new Config().load(() => {
-    new CollectExpoResults().initialize();
-});
+const config = new Config();
+config.load();
+const httpClient = new HttpClient(config);
+config.update(httpClient, () => {});
+new CollectExpoResults().initialize();
 
 function uniqueUserId() {
     const results =
