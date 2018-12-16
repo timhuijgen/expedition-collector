@@ -1,10 +1,11 @@
 import NeDB from 'nedb';
-import Datastore from "./Datastore";
-import {ExpeditionModel} from './Expedition.model';
+import {BaseStore} from "../base.store";
+import {ExpeditionModel} from './expedition.model';
 
-export default class Expedition extends Datastore {
+export class ExpeditionStore extends BaseStore {
+    protected storeName = 'ExpeditionStore';
     protected store: NeDB;
-    protected uniqueFields = ['MessageId'];
+    protected uniqueFields = ['messageId'];
 
     constructor() {
         super();
@@ -16,9 +17,9 @@ export default class Expedition extends Datastore {
             this.store.find({userId: userId}, {
                 messageId: 1,
                 _id: 0
-            }).sort({date: -1}).limit(300).exec((err: Error, messages: any) => {
+            }).sort({date: -1}).limit(300).exec((err: Error, messages: {messageId: number}[]) => {
                 if(err) return reject(err);
-                resolve(messages.map((message: any) => message.messageId));
+                resolve(messages.map((message: {messageId: number}) => message.messageId));
             });
         });
     }

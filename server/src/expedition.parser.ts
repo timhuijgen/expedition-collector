@@ -1,16 +1,16 @@
-import FleetMatcher from './matchers/FleetMatcher';
-import SpeedMatcher from './matchers/SpeedMatcher';
-import DelayMatcher from './matchers/DelayMatcher';
-import PiratesMatcher from './matchers/PiratesMatcher';
-import DestroyedMatcher from './matchers/DestroyedMatcher';
-import AliensMatcher from './matchers/AliensMatcher';
-import ResourceMatcher from './matchers/ResourceMatcher';
-import ItemMatcher from './matchers/ItemMatcher';
-import TraderMatcher from './matchers/TraderMatcher';
-import Matcher from './matchers/Matcher';
-import ResourceTypeMatcher from './matchers/ResourceTypeMatcher';
+import {FleetMatcher} from './matchers/fleet.matcher';
+import {SpeedMatcher} from './matchers/speed.matcher';
+import {DelayMatcher} from './matchers/delay.matcher';
+import {PiratesMatcher} from './matchers/pirates.matcher';
+import {DestroyedMatcher} from './matchers/destroyed.matcher';
+import {AliensMatcher} from './matchers/aliens.matcher';
+import {ResourceMatcher} from './matchers/resource.matcher';
+import {ItemMatcher} from './matchers/item.matcher';
+import {TraderMatcher} from './matchers/trader.matcher';
+import {Matcher} from './matchers/matcher';
+import {ResourceTypeMatcher} from './matchers/resource-type.matcher';
 
-export default class ContentParser {
+export class ExpeditionParser {
     private value: number = 0;
     private expoResults: {property: string, value: boolean|number}[] = [];
     private noResult: boolean = true;
@@ -30,7 +30,7 @@ export default class ContentParser {
     constructor(private readonly content: string) {
     }
 
-    public parse(): ContentParser {
+    public parse(): ExpeditionParser {
         this.expoOutcomes.forEach(outcome => {
             this.expoResults.push({
                 property: outcome.property,

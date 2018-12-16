@@ -1,5 +1,5 @@
-import Matcher from "./Matcher";
+import {Matcher} from "./matcher";
 
-export default class PiratesMatcher extends Matcher {
+export class PiratesMatcher extends Matcher {
     public matcher = [/piraten/, /Enkele primitieve barbaren vallen ons aan met ruimteschepen die die naam nauwelijks verdienen/];
 }

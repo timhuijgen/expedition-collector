@@ -1,6 +1,6 @@
-import Matcher from "./Matcher";
+import {Matcher} from "./matcher";
 
-export default class DestroyedMatcher extends Matcher {
+export class DestroyedMatcher extends Matcher {
     public matcher = [
         /Een ontploffing van de hyperruimtemotor veroorzaakt een kettingreactie van explosies die heel de vloot vernietigt/
     ];

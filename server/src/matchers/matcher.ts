@@ -1,4 +1,4 @@
-export default abstract class Matcher {
+export abstract class Matcher {
     abstract matcher: RegExp | RegExp[];
 
     public match(content: string): boolean | number {

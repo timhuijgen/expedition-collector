@@ -1,6 +1,6 @@
-import Matcher from "./Matcher";
+import {Matcher} from "./matcher";
 
-export default class ResourceMatcher extends Matcher {
+export class ResourceMatcher extends Matcher {
     public matcher = /Er is (\w*\s?\w*?)\s? ([0-9]+\.?[0-9]+\.?[0-9]+\.?[0-9]+) buitgemaakt/;
 
     getValue(content: string): number {

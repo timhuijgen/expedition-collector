@@ -1,6 +1,6 @@
-import Matcher from "./Matcher";
+import {Matcher} from "./matcher";
 
-export default class SpeedMatcher extends Matcher {
+export class SpeedMatcher extends Matcher {
     public matcher = [
         /eerder terug dan verwacht/,
         /sneller thuis is dan gepland/

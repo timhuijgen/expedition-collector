@@ -2,24 +2,25 @@
   "name": "expo-stats",
   "version": "0.0.1",
   "description": "",
-  "main": "server/src/index.js",
+  "main": "server/dist/server.js",
   "scripts": {
-    "server": "node server/dist/index.js --",
-    "server:update": "node server/dist/index.js --update=true",
+    "server": "node server/dist/server.js",
+    "server:update": "node server/dist/server.js",
     "compile": "tsc",
     "tsc:watch": "tsc --watch"
   },
   "author": "Tim Huijgen",
   "license": "MIT",
   "dependencies": {
-    "@types/nedb": "^1.8.6",
-    "body-parser": "^1.18.3",
-    "express": "^4.16.4",
-    "moment": "^2.22.2",
-    "nedb": "^1.8.0",
-    "typescript": "^3.2.2"
+    "@types/moment": "2.13.0",
+    "@types/nedb": "1.8.6",
+    "body-parser": "1.18.3",
+    "express": "4.16.4",
+    "moment": "2.22.2",
+    "nedb": "1.8.0",
+    "typescript": "3.2.2"
   },
   "devDependencies": {
-    "@types/express": "^4.16.0"
+    "@types/express": "4.16.0"
   }
 }

@@ -1,6 +1,6 @@
-import Matcher from "./Matcher";
+import {Matcher} from "./matcher";
 
-export default class DelayMatcher extends Matcher {
+export class DelayMatcher extends Matcher {
     public matcher = [
         /later dan verwacht terugkeren/,
         /Daardoor is de terugkeer enigszins vertraagd/,

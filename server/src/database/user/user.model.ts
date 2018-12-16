@@ -1,4 +1,4 @@
-import {ResourceType} from "../matchers/ResourceTypeMatcher";
+import {ResourceType} from "../../matchers/resource-type.matcher";
 
 export interface UserModel {
     _id?: string;

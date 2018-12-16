@@ -1,7 +1,7 @@
 import Express from 'express';
-import ContentParser from "./ContentParser";
-import {ResourceType} from "./matchers/ResourceTypeMatcher";
-import FleetMatcher from "./matchers/FleetMatcher";
+import {ExpeditionParser} from "./expedition.parser";
+import {ResourceType} from "./matchers/resource-type.matcher";
+import {FleetMatcher} from "./matchers/fleet.matcher";
 
 const BodyParser = require('body-parser');
 const Database = require('nedb');
@@ -22,7 +22,6 @@ express.use(function(req, res, next) {
     }
     next();
 });
-
 
 const ExpoStore = new Database({filename: 'server/data/expostore'});
 ExpoStore.ensureIndex({fieldName: 'messageId', unique: true}, (err: any) => {
@@ -74,7 +73,6 @@ interface User {
     };
 }
 
-
 express.post('/settings', (req, res) => {
     console.log('/settings', req.body);
     UserStore.findOne({userId: req.query.userId}, (err: any, user: User) => {
@@ -83,7 +81,7 @@ express.post('/settings', (req, res) => {
                 trading: req.body.trading,
                 fleetValue: req.body.fleetValue
             }}, {}, (err: any) => {
-                console.log('User %s settings updated', req.query.userId);
+                console.log('UserStore %s settings updated', req.query.userId);
                 res.json({error: !!err});
             });
         }
@@ -92,14 +90,14 @@ express.post('/settings', (req, res) => {
             trading: req.body.trading,
             fleetValue: req.body.fleetValue
         }, (err: any, doc: User) => {
-            console.log('User %s added', req.query.userId);
+            console.log('UserStore %s added', req.query.userId);
             res.json({error: !!err});
         });
     });
 });
 
 express.post('/test', (req, res) => {
-    const parser = new ContentParser(req.body.teststring).parse();
+    const parser = new ExpeditionParser(req.body.teststring).parse();
     console.log(parser.getValue());
     console.log(parser.getProperty('fleet'));
     res.send({});
@@ -135,7 +133,7 @@ interface ExpoModel {
 }
 
 function insertResult(data: ExpoResult, cb: Function) {
-    const parser = new ContentParser(data.content).parse();
+    const parser = new ExpeditionParser(data.content).parse();
     const expoResult: ExpoModel = {
         userId: data.userId,
         messageId: data.id,
@@ -224,7 +222,7 @@ if (getInputFromArgv('update')) {
 
         let counter = 0;
         results.forEach((report: ExpoModel) => {
-            const parser = new ContentParser(report.content).parse();
+            const parser = new ExpeditionParser(report.content).parse();
             const newReport = {
                 nothing: parser.isNothing(),
                 value: parser.getValue(),
@@ -256,7 +254,10 @@ if (getInputFromArgv('update')) {
 
 }
 
+
 stats();
+
+
 
 process.once('uncaughtException', function (err) {
     console.error('FATAL: Uncaught exception.');

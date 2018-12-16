@@ -1,5 +1,5 @@
-import Matcher from "./Matcher";
-import {ResourceType} from "./ResourceTypeMatcher";
+import {Matcher} from "./matcher";
+import {ResourceType} from "./resource-type.matcher";
 
 const shipValues:{[ship: string]: {[resourceType: number]: number}} = {
     'licht gevechtsschip': {
@@ -72,7 +72,7 @@ function shipTotalValue(ship:string, mse:boolean = false) {
     return value;
 }
 
-export default class FleetMatcher extends Matcher {
+export class FleetMatcher extends Matcher {
     public matcher = /De volgende schepen zijn nu een deel van de vloot:/;
 
     public getValue(content:string, mse:boolean = false):number {

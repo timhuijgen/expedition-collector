@@ -1,4 +1,4 @@
-import Matcher from "./Matcher";
+import {Matcher} from "./matcher";
 
 export enum ResourceType {
     None = 0,
@@ -8,7 +8,7 @@ export enum ResourceType {
     DarkMatter = 4
 }
 
-export default class ResourceTypeMatcher extends Matcher {
+export class ResourceTypeMatcher extends Matcher {
     public matcher = /Er is (\w*\s?\w*?)\s? ([0-9]+\.?[0-9]+\.?[0-9]+\.?[0-9]+) buitgemaakt/;
 
     public match(content: string): number | boolean {

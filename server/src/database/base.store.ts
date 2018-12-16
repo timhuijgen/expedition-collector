@@ -1,6 +1,7 @@
 import NeDB from 'nedb';
 
-export default abstract class Datastore {
+export abstract class BaseStore {
+    protected abstract storeName: string;
     protected abstract store: NeDB;
     protected abstract uniqueFields: string[] = [];
 
@@ -11,7 +12,7 @@ export default abstract class Datastore {
                     console.error('Error while loading user store', err);
                     return reject(err);
                 }
-                console.log('UserStore loaded');
+                console.log(`Store ${this.storeName} loaded`);
                 resolve();
             });
         });
@@ -20,7 +21,9 @@ export default abstract class Datastore {
         this.uniqueFields.forEach(field => {
             promises.push(new Promise((resolve, reject) => {
                 this.store.ensureIndex({fieldName: field, unique: true}, (err: Error) => {
-                    if (err) return reject(err);
+                    if (err) {
+                        return reject(err);
+                    }
                     resolve();
                 });
             }));

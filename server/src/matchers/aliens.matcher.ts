@@ -1,6 +1,6 @@
-import Matcher from "./Matcher";
+import {Matcher} from "./matcher";
 
-export default class AliensMatcher extends Matcher {
+export class AliensMatcher extends Matcher {
     public matcher = [
         /Onbekende exotisch ogende schepen vallen de expeditie zonder waarschuwing aan/,
         /Onze expeditie is aangevallen door een kleine vloot onbekende schepen/,

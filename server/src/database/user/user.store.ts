@@ -1,8 +1,9 @@
 import NeDB from 'nedb';
-import Datastore from "./Datastore";
-import {UserModel} from "./User.model";
+import {BaseStore} from "../base.store";
+import {UserModel} from "./user.model";
 
-export default class User extends Datastore {
+export class UserStore extends BaseStore {
+    protected storeName = 'UserStore';
     protected store: NeDB;
     protected uniqueFields = ['userId'];
 
@@ -22,7 +23,7 @@ export default class User extends Datastore {
 
     public async addUser(user: UserModel): Promise<UserModel> {
         return await new Promise((resolve, reject) => {
-            this.store.insert(user, (err: any, newUser: UserModel) => {
+            this.store.insert(user, (err: Error, newUser: UserModel) => {
                 if(err) return reject(err);
                 resolve();
             });
